@@ -206,7 +206,7 @@ void GEMEMTFMatcher::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
               int gemIO = (cscIO + abs(deltaChamber))%2; //determines whether the innermost GEM copad is parallel or off-side
               float Slopes[2][2]={{6.523, 5.968},{16.11, 13.90}}; //linear slope correction fit values for innermost GEM to any CSC combinations
               // slope value. The extra -1 is to account for a sign convention
-              float cscSlope = pow(-1, lct.getBend()) * emtfHit.getSlope();
+              float cscSlope = pow(-1, lct.getBend()) * emtfHit.slope();
               // need to extract the sign bit of the CSC z coordinate
               float signCSCz = pow(-1, 1-signbit(csc_gp.z()));
               float currentDPhi = reco::deltaPhi(float(csc_gp.phi()) , float(gem_gp.phi())) * signCSCz - Slopes[cscIO][gemIO] * cscSlope * 0.00296/8.;
