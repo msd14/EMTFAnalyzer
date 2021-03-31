@@ -118,6 +118,8 @@ process.SimL1Emulator = cms.Sequence(
 )
 
 # Additional output definition
+from GEMCode.GEMValidation.cscTriggerCustoms import dropCaloDigis
+process = dropCaloDigis(process)
 
 # Other statements
 process.mix.digitizers = cms.PSet(process.theDigitizersValid)
