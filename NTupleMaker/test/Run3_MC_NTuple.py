@@ -62,6 +62,8 @@ process.source = cms.Source(
 process.load('EMTFAnalyzer.NTupleMaker.GEMEMTFMatcher_cfi')
 process.load('EMTFAnalyzer.NTupleMaker.FlatNtuple_cfi')
 
+process.GEMEMTFMatcher.verbose = True
+
 ## Run-2 matcher
 process.GEMEMTFMatcherMCRun2 = process.GEMEMTFMatcher.clone()
 process.GEMEMTFMatcherMCRun2.emtfHitTag = cms.InputTag("simEmtfDigis")

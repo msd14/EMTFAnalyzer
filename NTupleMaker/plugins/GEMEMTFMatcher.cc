@@ -57,7 +57,9 @@ class GEMEMTFMatcher : public edm::EDProducer {
   edm::EDGetTokenT<GEMCoPadDigiCollection>                 GEMCoPad_token;
 
   const CSCGeometry* cscGeometry_;
-
+  bool verbose_;
+  int minChamber_;
+  int maxChamber_;
 }; // End class GEMEMTFMatcher public edm::EDProducer
 
 // Constructor
@@ -66,6 +68,9 @@ GEMEMTFMatcher::GEMEMTFMatcher(const edm::ParameterSet& iConfig)
   EMTFHit_token      = consumes<std::vector<l1t::EMTFHit>>   (iConfig.getParameter<edm::InputTag>("emtfHitTag"));
   EMTFTrack_token    = consumes<std::vector<l1t::EMTFTrack>> (iConfig.getParameter<edm::InputTag>("emtfTrackTag"));
   GEMCoPad_token = consumes<GEMCoPadDigiCollection> (iConfig.getParameter<edm::InputTag>("gemCoPadTag"));
+  verbose_ = iConfig.getParameter<bool>("verbose");
+  minChamber_ = iConfig.getParameter<int>("minChamber");
+  maxChamber_ = iConfig.getParameter<int>("maxChamber");
 
   produces<std::vector<l1t::EMTFTrack>>();
   produces<std::vector<l1t::EMTFHit>>();
@@ -81,7 +86,7 @@ void GEMEMTFMatcher::beginRun(const edm::Run& iRun, const edm::EventSetup& iSetu
 
 // Called once per run
 void GEMEMTFMatcher::endRun(const edm::Run& iRun, const edm::EventSetup& iSetup) {
-  std::cout << "\nInside GEMEMTFMatcher::endRun()\n" << std::endl;
+  if (verbose_) std::cout << "\nInside GEMEMTFMatcher::endRun()\n" << std::endl;
 }
 
 
@@ -115,15 +120,20 @@ void GEMEMTFMatcher::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
       oc2->push_back(hit);
     }
 
-    //for (const l1t::EMTFHit& emtfHit: *emtfHits) {
-      //if (emtfHit.Is_CSC() == 1 and emtfHit.Station() == 1 and emtfHit.Ring() == 1) {
-      //std::cout << "Chamber (top): " << emtfHit.Chamber() << ", Phi: " << emtfHit.Phi_glob() << ", Eta: " << emtfHit.Eta() << ", Theta: " << emtfHit.Theta() << std::endl;
-      //}
-    //}
-
+    if (verbose_ and false) {
+      std::cout << "Printing CSC TP info:" << std::endl;
+      for (const auto& emtfHit: *emtfHits) {
+        if (emtfHit.Is_CSC() == 1 and emtfHit.Station() == 1 and emtfHit.Ring() == 1) {
+          std::cout << emtfHit.CSC_DetId() << " " << emtfHit.CreateCSCCorrelatedLCTDigi()
+            //                    << ", Phi: " << emtfHit.Phi_glob() << ", Eta: " << emtfHit.Eta() << ", Theta: " << emtfHit.Theta()
+                    << std::endl;
+        }
+      }
+    }
   }
 
-  //std::cout << "Printing ME1/1 muon info in GEMEMTFMatcher (top):" << std::endl;
+  if (verbose_)
+    std::cout << "Printing ME1/1 muon info in GEMEMTFMatcher (top):" << std::endl;
 
   if ( emtfTracks.isValid() ) {
 
@@ -131,6 +141,13 @@ void GEMEMTFMatcher::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
     for (const auto& ttrack : *emtfTracks) {
 
       auto track = ttrack;
+      if (verbose_)
+        std::cout << std::endl << "Analyzing track: pT " << track.Pt() << " eta " << track.Eta() << " phi " << track.Phi_glob()
+                  << " Winner: " << track.Winner() << " Rank: " << track.Rank()
+                  << " Charge: " << track.Charge() << " BX: " << track.BX()
+                  << " Mode: " << track.Mode() << " Zone: " << track.Zone()
+                  << " Mode_neighbor: " << track.Mode_neighbor() << " Track_num: " << track.Track_num()
+                  <<  std::endl;
 
       const auto& trackHits = track.Hits();
 
@@ -147,7 +164,6 @@ void GEMEMTFMatcher::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
             emtfHit.Station() == 1 and
             emtfHit.Ring() == 1) {
 
-
           // ME1/1 detid
           const auto& cscId = emtfHit.CSC_DetId();
           CSCDetId key_id(cscId.endcap(), cscId.station(), cscId.ring(), cscId.chamber(), 3);
@@ -162,28 +178,28 @@ void GEMEMTFMatcher::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
           // CSC GP
           const auto& lct = emtfHit.CreateCSCCorrelatedLCTDigi();
 
+          if (verbose_)
+            std::cout << "Analyzing " << cscId << " " << lct << std::endl;
+
           const GlobalPoint& csc_gp = getGlobalPosition(cscId, lct);
 
           // best copad
           GEMCoPadDigi best;
           GEMDetId bestId;
 
+          // 90% inclusive cut
+          float maxDPhi = 0.024;
+
           // have to consider +1/0/-1 GEM chambers
-          //for (int deltaChamber = -1; deltaChamber <= 1; deltaChamber++){
-          for (int deltaChamber = 0; deltaChamber<1; deltaChamber++){
+          for (int deltaChamber = minChamber_; deltaChamber <= maxChamber_; deltaChamber++){
 
             // corresponding GE1/1 detid
             const GEMDetId gemId(cscId.zendcap(), 1, 1, 0,
                                  (cscId.chamber() + deltaChamber) % 36,
                                  0);
 
-
-
             // copad collection
             const auto& co_pads_in_det = gemCoPads.get(gemId);
-
-            // 90% inclusive cut
-            float maxDPhi = 0.024;
 
             // loop on the GEM coincidence pads
             // find the closest matching one
@@ -207,9 +223,22 @@ void GEMEMTFMatcher::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
               float Slopes[2][2]={{6.523, 5.968},{16.11, 13.90}}; //linear slope correction fit values for innermost GEM to any CSC combinations
               // slope value. The extra -1 is to account for a sign convention
               float cscSlope = pow(-1, lct.getBend()) * emtfHit.Slope();
+
+              // if (verbose_) {
+              //   std::cout << "emtfHit.Slope: " << emtfHit.Slope() << std::endl;
+              //   if (cscIO==0){std::cout << "corrected EvenToEven slope: " << cscSlope*6.523 << std::endl;}
+              //   else { std::cout << "corrected OddToOdd slope: " << cscSlope*13.90 << std::endl;}
+              // }
+
               // need to extract the sign bit of the CSC z coordinate
               float signCSCz = pow(-1, 1-signbit(csc_gp.z()));
               float currentDPhi = reco::deltaPhi(float(csc_gp.phi()) , float(gem_gp.phi())) * signCSCz - Slopes[cscIO][gemIO] * cscSlope * 0.00296/8.;
+              std::cout << "Candidate GEM " << gemCoId << " " << copad << " " << currentDPhi << std::endl;
+
+              // if (verbose_) {
+              //   std::cout << "Current dPhi: " << currentDPhi << std::endl;
+              //   std::cout << "CSC gp phi: " << float(csc_gp.phi()) << ", GEM gp phi: " << float(gem_gp.phi()) << std::endl;
+              // }
 
               if (std::abs(currentDPhi) < std::abs(maxDPhi)) {
                 best = copad;
@@ -227,6 +256,10 @@ void GEMEMTFMatcher::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
           if (best.isValid()) {
+            if (verbose_) {
+              std::cout << "Best matching GEM: " << bestId << " " << best << " maxDPhi: " << maxDPhi << std::endl;
+            }
+
             l1t::EMTFHit bestEMTFHit;
 
             // create a new EMTFHit with the
@@ -246,7 +279,7 @@ void GEMEMTFMatcher::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
             bestEMTFHit.set_bx(best.bx(1));
             bestEMTFHit.set_valid(1);
 
-	    int fph = emtf::calc_phi_loc_int(glob_phi, sector);
+            int fph = emtf::calc_phi_loc_int(glob_phi, sector);
             int th = emtf::calc_theta_int(glob_theta, bestEMTFHit.Endcap());
 
             if (0 > fph || fph > 4920) {break;}
@@ -256,18 +289,18 @@ void GEMEMTFMatcher::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
             th <<= 2;                    // upgrade to full CSC precision by adding 2 zeros
             th = (th == 0) ? 1 : th;     // protect against invalid value
 
-	    bestEMTFHit.set_phi_sim(glob_phi);
-	    bestEMTFHit.set_theta_sim(glob_theta);
-	    bestEMTFHit.set_eta_sim(glob_eta);
-	    bestEMTFHit.set_rho_sim(glob_rho);
+            bestEMTFHit.set_phi_sim(glob_phi);
+            bestEMTFHit.set_theta_sim(glob_theta);
+            bestEMTFHit.set_eta_sim(glob_eta);
+            bestEMTFHit.set_rho_sim(glob_rho);
 
-	    bestEMTFHit.set_phi_loc(emtf::calc_phi_loc_deg_from_glob(glob_phi, sector));
-	    bestEMTFHit.set_phi_glob(glob_phi);
-	    bestEMTFHit.set_eta(emtf::calc_eta_from_theta_deg(glob_theta, bestEMTFHit.Endcap() ));
-	    bestEMTFHit.set_theta(glob_theta);
+            bestEMTFHit.set_phi_loc(emtf::calc_phi_loc_deg_from_glob(glob_phi, sector));
+            bestEMTFHit.set_phi_glob(glob_phi);
+            bestEMTFHit.set_eta(emtf::calc_eta_from_theta_deg(glob_theta, bestEMTFHit.Endcap() ));
+            bestEMTFHit.set_theta(glob_theta);
 
-	    bestEMTFHit.set_phi_fp(fph);   // Full-precision integer phi
-	    bestEMTFHit.set_theta_fp(th);  // Full-precision integer theta
+            bestEMTFHit.set_phi_fp(fph);   // Full-precision integer phi
+            bestEMTFHit.set_theta_fp(th);  // Full-precision integer theta
 
             // push the new hit to the track and to the hit collection
             track.push_Hit(bestEMTFHit);
