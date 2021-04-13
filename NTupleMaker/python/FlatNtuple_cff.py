@@ -3,6 +3,9 @@ import FWCore.ParameterSet.Config as cms
 from EMTFAnalyzer.NTupleMaker.GEMEMTFMatcher_cfi import *
 from EMTFAnalyzer.NTupleMaker.FlatNtuple_cfi import *
 
+## pick up the right GEM copad collection
+GEMEMTFMatcher.gemCoPadTag = cms.InputTag("simCscTriggerPrimitiveDigisILT","","DIGI")
+
 ## Run-2 matcher
 GEMEMTFMatcherMCRun2 = GEMEMTFMatcher.clone()
 GEMEMTFMatcherMCRun2.emtfHitTag = cms.InputTag("simEmtfDigis")
@@ -11,9 +14,6 @@ GEMEMTFMatcherMCRun2.emtfTrackTag = cms.InputTag("simEmtfDigis")
 ## Run-3 matcher
 GEMEMTFMatcher.emtfHitTag = cms.InputTag("simEmtfDigisRun3CCLUT")
 GEMEMTFMatcher.emtfTrackTag = cms.InputTag("simEmtfDigisRun3CCLUT")
-
-## just in case the copads need to be rerun
-#GEMEMTFMatcher.gemCoPadTag = cms.InputTag("cscTriggerPrimitiveDigis","","NTUPLE")
 
 ## to be sure that the GEMEMTFMatcher is not screwing up any of the existing EMTFHit or EMTFTrack
 ## collections, run 4 ntuplizers:

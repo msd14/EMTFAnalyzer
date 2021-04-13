@@ -59,12 +59,16 @@ namespace {
 
     // dphi value
     float dphi = reco::deltaPhi(float(csc_gp.phi()) , float(gem_gp.phi()));
-
+    std::cout << "calculateGemCscDPhi dphi" << dphi << std::endl;
     // dphi correction
-    float dphiCorr = 0.00296/8. * ErfP0[cscIO][gemIO] * erf(cscSlope/ErfP1[cscIO][gemIO]);
+    float dphiCorr = 0.00296/8. * ErfP0[cscIO][gemIO] * std::erf(cscSlope/ErfP1[cscIO][gemIO]);
+    std::cout << "calculateGemCscDPhi dphiCorr" << dphiCorr << std::endl;
+
+    float phiComb = dphi + signCSCz * dphiCorr;
+    std::cout << "calculateGemCscDPhi phiComb" << phiComb << std::endl;
 
     // return combined
-    return dphi + signCSCz * dphiCorr;
+    return phiComb;
   }
 }
 
