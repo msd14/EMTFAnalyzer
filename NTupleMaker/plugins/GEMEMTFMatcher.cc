@@ -42,29 +42,29 @@ namespace {
                              const l1t::EMTFHit& emtfHit,
                              const GlobalPoint& csc_gp, const GlobalPoint& gem_gp) {
     //determines the CSC inner or outermost table
-    int cscIO = cscId.chamber()%2==0?0:1;
+    int cscIO = cscId.chamber() % 2== 0 ? 0 : 1;
 
     //determines whether the innermost GEM copad is parallel or off-side
-    int gemIO = (cscIO+abs(deltaChamber))%2;
+    int gemIO = (cscIO + abs(deltaChamber)) % 2;
 
     //ERF slope correction fit values for innermost GEM to any CSC combinations
     float ErfP0[2][2]={{63,52},{118,106}};
     float ErfP1[2][2]={{9.6,9.5},{7.4,7.1}};
 
     // slope value. The extra -1 is to account for a sign convention
-    float cscSlope = (-1) * lct.getBend() * emtfHit.Slope();
+    float cscSlope = pow(-1, lct.getBend()) * emtfHit.Slope();
 
-    //tbd, needs to extract the sign bit of the CSC z coordinate
-    float signCSCz = pow(-1, 1-signbit(csc_gp.z()));
+    // sign bit of the CSC z coordinate
+    float signCSCz = pow(-1, signbit(csc_gp.z()));
 
     // dphi value
-    float dphi = reco::deltaPhi(float(csc_gp.phi()) , float(gem_gp.phi())) * signCSCz;
+    float dphi = reco::deltaPhi(float(csc_gp.phi()) , float(gem_gp.phi()));
 
     // dphi correction
     float dphiCorr = 0.00296/8. * ErfP0[cscIO][gemIO] * erf(cscSlope/ErfP1[cscIO][gemIO]);
 
     // return combined
-    return dphi + dphiCorr;
+    return dphi + signCSCz * dphiCorr;
   }
 }
 
