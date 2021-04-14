@@ -5,4 +5,7 @@ GEMEMTFMatcher = cms.EDProducer(
     emtfHitTag       = cms.InputTag("simEmtfDigis"),
     emtfTrackTag     = cms.InputTag("simEmtfDigis"),
     gemCoPadTag      = cms.InputTag("simCscTriggerPrimitiveDigis"),
+    verbose = cms.bool(False),
+    minChamber = cms.int32(-1),
+    maxChamber = cms.int32(1),
 )

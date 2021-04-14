@@ -143,9 +143,15 @@ void EMTFTrackInfo::Fill(const l1t::EMTFTrack & emtfTrk, const EMTFHitInfo & hit
         _maxTh = std::max(_maxTh, trk_hit.Theta_fp());
       }
     } // End loop: for (int i = 0; i < ACCESS(hits.mInts, "nHits"); i++)
-    if ((not foundHit) or foundTwoHits) {
+    if (not foundHit) {
       std::cout << "\n\n***  Rare EMTF track matching bug  ***" << std::endl;
-      std::cout << "Found no match (or two matches) in emulator for the following emulator hit:" << std::endl;
+      std::cout << "Found no match in emulator for the following emulator hit:" << std::endl;
+      PrintEMTFHit(trk_hit);
+      // assert(foundHit);
+    }
+    if (foundTwoHits) {
+      std::cout << "\n\n***  Rare EMTF track matching bug  ***" << std::endl;
+      std::cout << "Found two matches in emulator for the following emulator hit:" << std::endl;
       PrintEMTFHit(trk_hit);
       // assert(foundHit);
     }

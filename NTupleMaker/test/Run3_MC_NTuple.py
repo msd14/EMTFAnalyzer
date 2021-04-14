@@ -12,6 +12,8 @@ from Configuration.Eras.Era_Run3_cff import Run3
 
 process = cms.Process('NTUPLE', Run3)
 
+matchGEM = False
+
 ## Import standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
@@ -35,8 +37,7 @@ process.load("RecoMuon.TrackingTools.MuonServiceProxy_cff")
 process.load("RecoMuon.TrackingTools.MuonTrackLoader_cff")
 
 ## Message Logger and Event range
-#process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1000)
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-100) )
 process.options = cms.untracked.PSet(wantSummary = cms.untracked.bool(False))
 
 ## Global Tags
@@ -50,13 +51,18 @@ readFiles = cms.untracked.vstring()
 process.source = cms.Source(
     'PoolSource',
     fileNames = cms.untracked.vstring(
+<<<<<<< HEAD
         'file:/uscms/home/mdecaro/nobackup/EMU_UPDATE6/CMSSW_11_2_0_pre9/src/EMTFAnalyzer/NTupleMaker/test/step2bis_run3_99.root'
+=======
+        '/store/user/dildick/SingleMu_Run3_Pt1to50OneOverPt_noPU_10M/crab_SingleMu_Run3_Pt1to50OneOverPt_noPU_10M_DIGI_L1_20210408_v1/210409_033352/0000/step2_1-1.root'
+>>>>>>> a991c493ceba269de009c96f05b0240fc809fd0f
     ),
 )
 
 ###################
 ###  NTuplizer  ###
 ###################
+<<<<<<< HEAD
 process.load('EMTFAnalyzer.NTupleMaker.GEMEMTFMatcher_cfi')
 process.load('EMTFAnalyzer.NTupleMaker.FlatNtuple_cfi')
 
@@ -80,14 +86,22 @@ process.Analysis = cms.Sequence(process.FlatNtupleMCRun2 * process.FlatNtupleMC)
 process.Analysis_step = cms.Path(
     process.matcher *
     process.Analysis)
+=======
+process.load('EMTFAnalyzer.NTupleMaker.FlatNtuple_cff')
+
+process.Analysis_step = cms.Path(
+    process.GEMEMTFMatchers *
+    process.EMTFAnalyzers
+)
+>>>>>>> a991c493ceba269de009c96f05b0240fc809fd0f
 
 process.endjob_step = cms.EndPath(process.endOfProcess)
 
 ## NTuple output File
 process.TFileService = cms.Service(
     "TFileService",
-    fileName = cms.string('EMTF_MC_NTuple_SingleMu_20201202.root')
-    )
+    fileName = cms.string('EMTF_MC_NTuple_SingleMu.root')
+)
 
 # Schedule definition
 process.schedule = cms.Schedule(process.Analysis_step,process.endjob_step)
